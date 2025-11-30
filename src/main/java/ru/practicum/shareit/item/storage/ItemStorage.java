@@ -11,7 +11,7 @@ public interface ItemStorage {
 
     Optional<Item> getItem(Long id);
 
-    Collection<Item> AllItems();
+    Collection<Item> allItems();
 
     List<Item> findByOwnerItem(Long ownerId);
 

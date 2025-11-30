@@ -80,7 +80,7 @@ public class ItemServiceImpl implements ItemService {
         }
         String query = text.toLowerCase(Locale.ROOT);
 
-        return itemStorage.AllItems().stream()
+        return itemStorage.allItems().stream()
                 .filter(Item::getAvailable) // только доступные к аренде
                 .filter(item ->
                         (item.getName() != null && item.getName().toLowerCase(Locale.ROOT).contains(query)) ||

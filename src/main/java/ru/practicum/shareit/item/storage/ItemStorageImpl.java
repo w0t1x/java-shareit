@@ -26,7 +26,7 @@ public class ItemStorageImpl implements ItemStorage {
     }
 
     @Override
-    public Collection<Item> AllItems() {
+    public Collection<Item> allItems() {
         return storage.values();
     }
 
