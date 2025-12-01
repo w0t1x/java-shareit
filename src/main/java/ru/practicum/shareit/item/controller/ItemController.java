@@ -14,29 +14,31 @@ import java.util.List;
 @RequestMapping("/items")
 @RequiredArgsConstructor
 public class ItemController {
+    private static final String HEADER = "X-Sharer-User-Id";
+
     private final ItemService service;
 
     @PostMapping
-    public ItemDto create(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemDto create(@RequestHeader(HEADER) Long userId,
                           @RequestBody ItemDto itemDto) {
         return service.create(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
-    public ItemDto update(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemDto update(@RequestHeader(HEADER) Long userId,
                           @PathVariable Long itemId,
                           @RequestBody ItemDto itemDto) {
         return service.update(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
-    public ItemDto getById(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ItemDto getById(@RequestHeader(HEADER) Long userId,
                            @PathVariable Long itemId) {
         return service.getById(userId, itemId);
     }
 
     @GetMapping
-    public List<ItemDto> getOwnerItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
+    public List<ItemDto> getOwnerItems(@RequestHeader(HEADER) Long userId) {
         return service.getOwnerItems(userId);
     }
 
