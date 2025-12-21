@@ -1,26 +1,22 @@
 package ru.practicum.shareit.booking.controller;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
 import ru.practicum.shareit.booking.model.State;
-import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.booking.service.BookingService;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/bookings")
+@AllArgsConstructor
 public class BookingController {
 
     private static final String USER_HEADER = "X-Sharer-User-Id";
     private final BookingService bookingService;
-
-    public BookingController(BookingService bookingService) {
-        this.bookingService = bookingService;
-    }
 
     @PostMapping
     public BookingDto create(@RequestHeader(USER_HEADER) long userId,
