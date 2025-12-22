@@ -16,7 +16,7 @@ services:
 
   db-init:
     image: postgres:16.1
-    container_name: db-inits
+    container_name: db-init
     depends_on:
       db:
         condition: service_healthy
