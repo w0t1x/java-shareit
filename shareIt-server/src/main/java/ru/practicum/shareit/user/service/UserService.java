@@ -1,10 +1,12 @@
 package ru.practicum.shareit.user.service;
 
+import org.springframework.data.jpa.repository.JpaRepository;
 import ru.practicum.shareit.user.dto.UserDTO;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.Collection;
 
-public interface UserService {
+public interface UserService{
     UserDTO get(Long id);
 
     Collection<UserDTO> getAll();

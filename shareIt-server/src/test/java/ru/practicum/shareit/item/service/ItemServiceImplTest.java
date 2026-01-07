@@ -1,95 +1,123 @@
 package ru.practicum.shareit.item.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.mapper.BookingMapper;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.exception.ForbiddenException;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentCreateDto;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.mapper.CommentMapper;
+import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.item.repository.CommentRepository;
 import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.user.dto.UserDTO;
+import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
-import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@Transactional
 class ItemServiceImplTest {
 
-    @Autowired
-    UserService userService;
-    @Autowired
-    ItemService itemService;
+    private ItemRepository itemRepository;
+    private UserRepository userRepository;
+    private BookingRepository bookingRepository;
+    private CommentRepository commentRepository;
+    private ItemMapper itemMapper;
+    private BookingMapper bookingMapper;
+    private CommentMapper commentMapper;
+    private ItemRequestRepository requestRepo;
 
-    @Autowired
-    UserRepository userRepository;
-    @Autowired
-    ItemRepository itemRepository;
-    @Autowired
-    BookingRepository bookingRepository;
+    private ItemServiceImpl service;
+
+    @BeforeEach
+    void setUp() {
+        itemRepository = mock(ItemRepository.class);
+        userRepository = mock(UserRepository.class);
+        bookingRepository = mock(BookingRepository.class);
+        commentRepository = mock(CommentRepository.class);
+        itemMapper = mock(ItemMapper.class);
+        bookingMapper = mock(BookingMapper.class);
+        commentMapper = mock(CommentMapper.class);
+        requestRepo = mock(ItemRequestRepository.class);
+
+        service = new ItemServiceImpl(itemRepository, userRepository, bookingRepository, commentRepository,
+                itemMapper, bookingMapper, commentMapper, requestRepo);
+    }
 
     @Test
-    void create_update_get_search_comment() {
-        long ownerId = userService.add(user("owner", "o@mail.ru")).getId();
-        long bookerId = userService.add(user("booker", "b@mail.ru")).getId();
-
-        ItemDto created = itemService.create(ownerId, item("Drill", "Good", true));
-        assertThat(created.getId()).isNotNull();
-
-        // forbidden update
-        assertThatThrownBy(() -> itemService.update(bookerId, created.getId(), item("X", null, null)))
-                .isInstanceOf(ForbiddenException.class);
-
-        // search blank -> empty
-        assertThat(itemService.search(bookerId, "  ")).isEmpty();
-
-        // comment: сначала без бронирования -> ValidationException
-        CommentCreateDto c = new CommentCreateDto();
-        c.setText("Nice");
-        assertThatThrownBy(() -> itemService.addComment(bookerId, created.getId(), c))
-                .isInstanceOf(ValidationException.class);
-
-        // добавим APPROVED booking в прошлом напрямую
-        User booker = userRepository.findById(bookerId).orElseThrow();
-        Item itemEntity = itemRepository.findById(created.getId()).orElseThrow();
-
-        bookingRepository.save(Booking.builder()
-                .item(itemEntity)
-                .booker(booker)
-                .status(Status.APPROVED)
-                .startTime(LocalDateTime.now().minusDays(2))
-                .endTime(LocalDateTime.now().minusDays(1))
-                .build());
-
-        // теперь comment allowed
-        assertThat(itemService.addComment(bookerId, created.getId(), c).getId()).isNotNull();
+    void create_nullBody_throws() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(User.builder().id(1L).build()));
+        assertThrows(ValidationException.class, () -> service.create(1L, null));
     }
 
-    private static UserDTO user(String name, String email) {
-        UserDTO u = new UserDTO();
-        u.setName(name);
-        u.setEmail(email);
-        return u;
+    @Test
+    void create_requestNotFound_throws() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(User.builder().id(1L).build()));
+        when(requestRepo.findById(10L)).thenReturn(Optional.empty());
+
+        ItemDto dto = new ItemDto();
+        dto.setName("n");
+        dto.setDescription("d");
+        dto.setAvailable(true);
+        dto.setRequestId(10L);
+
+        assertThrows(NotFoundException.class, () -> service.create(1L, dto));
     }
 
-    private static ItemDto item(String name, String desc, Boolean available) {
-        ItemDto i = new ItemDto();
-        i.setName(name);
-        i.setDescription(desc);
-        i.setAvailable(available);
-        return i;
+    @Test
+    void update_notOwner_throwsForbidden() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(User.builder().id(1L).build()));
+        when(itemRepository.findById(2L)).thenReturn(Optional.of(Item.builder().id(2L).userId(99L).build()));
+
+        ItemDto patch = new ItemDto();
+        patch.setName("new");
+
+        assertThrows(ForbiddenException.class, () -> service.update(1L, 2L, patch));
+    }
+
+    @Test
+    void addComment_withoutApprovedBooking_throws() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(User.builder().id(1L).name("u").build()));
+        when(itemRepository.findById(2L)).thenReturn(Optional.of(Item.builder().id(2L).userId(99L).build()));
+        when(bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndTimeBefore(eq(2L), eq(1L), eq(Status.APPROVED), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        CommentCreateDto dto = new CommentCreateDto();
+        dto.setText("hi");
+
+        assertThrows(ValidationException.class, () -> service.addComment(1L, 2L, dto));
+    }
+
+    @Test
+    void addComment_success_savesAndMaps() {
+        User author = User.builder().id(1L).name("u").build();
+        Item item = Item.builder().id(2L).userId(99L).build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(itemRepository.findById(2L)).thenReturn(Optional.of(item));
+        when(bookingRepository.existsByItemIdAndBookerIdAndStatusAndEndTimeBefore(eq(2L), eq(1L), eq(Status.APPROVED), any(LocalDateTime.class)))
+                .thenReturn(true);
+
+        when(commentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CommentDto out = new CommentDto();
+        when(commentMapper.toDto(any())).thenReturn(out);
+
+        CommentCreateDto dto = new CommentCreateDto();
+        dto.setText("hi");
+
+        assertSame(out, service.addComment(1L, 2L, dto));
+        verify(commentRepository).save(any());
+        verify(commentMapper).toDto(any());
     }
 }
-

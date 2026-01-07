@@ -9,6 +9,7 @@ import java.util.Objects;
 @Table(name = "users")
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @Getter
 @Setter
 @ToString
