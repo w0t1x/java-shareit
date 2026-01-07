@@ -13,20 +13,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BookingInputDtoJsonTest {
 
     @Autowired
-    private JacksonTester<BookingInputDto> json;
+    JacksonTester<BookingInputDto> json;
 
     @Test
-    void serialize_containsStartEndAsIso() throws Exception {
-        BookingInputDto dto = new BookingInputDto(
-                10L,
-                LocalDateTime.of(2026, 1, 1, 10, 0),
-                LocalDateTime.of(2026, 1, 2, 10, 0)
-        );
+    void serialize_and_deserialize() throws Exception {
+        BookingInputDto dto = new BookingInputDto();
+        dto.setItemId(99L);
+        dto.setStart(LocalDateTime.of(2030, 1, 1, 10, 0));
+        dto.setEnd(LocalDateTime.of(2030, 1, 2, 10, 0));
 
-        var content = json.write(dto);
+        var written = json.write(dto);
+        assertThat(written).hasJsonPathNumberValue("$.itemId");
+        assertThat(written).hasJsonPathStringValue("$.start");
+        assertThat(written).hasJsonPathStringValue("$.end");
 
-        assertThat(content).extractingJsonPathNumberValue("$.itemId").isEqualTo(10);
-        assertThat(content).extractingJsonPathStringValue("$.start").isEqualTo("2026-01-01T10:00:00");
-        assertThat(content).extractingJsonPathStringValue("$.end").isEqualTo("2026-01-02T10:00:00");
+        BookingInputDto parsed = json.parseObject(written.getJson());
+        assertThat(parsed.getItemId()).isEqualTo(99L);
+        assertThat(parsed.getStart()).isEqualTo(dto.getStart());
+        assertThat(parsed.getEnd()).isEqualTo(dto.getEnd());
     }
 }
+

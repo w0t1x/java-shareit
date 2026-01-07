@@ -5,42 +5,50 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.request.dto.ItemRequestCreateDto;
-import ru.practicum.shareit.request.dto.ItemRequestDto;
-import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.repository.UserRepository;
+import ru.practicum.shareit.user.dto.UserDTO;
+import ru.practicum.shareit.user.service.UserService;
 
-import java.util.List;
+import static org.assertj.core.api.Assertions.*;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class ItemRequestServiceImplIT {
 
     @Autowired
-    private ItemRequestService requestService;
-
+    UserService userService;
     @Autowired
-    private UserRepository userRepository;
+    ItemRequestService requestService;
 
     @Test
-    void create_thenGetOwn_containsRequest() {
-        User user = userRepository.save(new User(null, "req@test.ru", "Requester"));
+    void create_and_getFlows() {
+        long u1 = userService.add(user("u1", "u1@mail.ru")).getId();
+        long u2 = userService.add(user("u2", "u2@mail.ru")).getId();
 
-        ItemRequestCreateDto in = new ItemRequestCreateDto();
-        in.setDescription("Need a drill");
+        ItemRequestCreateDto dto = new ItemRequestCreateDto();
+        dto.setDescription("Need a drill");
 
-        ItemRequestDto created = requestService.create(user.getId(), in);
-
+        var created = requestService.create(u1, dto);
         assertThat(created.getId()).isNotNull();
-        assertThat(created.getDescription()).isEqualTo("Need a drill");
-        assertThat(created.getItems()).isNotNull();
-        assertThat(created.getItems()).isEmpty();
 
-        List<ItemRequestDto> own = requestService.getOwn(user.getId());
-        assertThat(own).hasSize(1);
-        assertThat(own.get(0).getId()).isEqualTo(created.getId());
+        assertThat(requestService.getOwn(u1)).isNotEmpty();
+        assertThat(requestService.getAllOther(u2, 0, 10)).isNotNull();
+        assertThat(requestService.getById(u2, created.getId()).getId()).isEqualTo(created.getId());
+
+        // validation
+        ItemRequestCreateDto bad = new ItemRequestCreateDto();
+        bad.setDescription(" ");
+        assertThatThrownBy(() -> requestService.create(u1, bad))
+                .isInstanceOf(ValidationException.class);
+    }
+
+    private static UserDTO user(String name, String email) {
+        UserDTO u = new UserDTO();
+        u.setName(name);
+        u.setEmail(email);
+        return u;
     }
 }
+

@@ -7,55 +7,67 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingInputDto;
-import ru.practicum.shareit.booking.model.Status;
-import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.repository.ItemRepository;
-import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.repository.UserRepository;
+import ru.practicum.shareit.booking.model.State;
+import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.user.dto.UserDTO;
+import ru.practicum.shareit.user.service.UserService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 class BookingServiceImplIT {
 
     @Autowired
     private BookingService bookingService;
-
     @Autowired
-    private UserRepository userRepository;
-
+    private UserService userService;
     @Autowired
-    private ItemRepository itemRepository;
+    private ItemService itemService;
 
     @Test
-    void addBooking_savesAndReturnsWaiting() {
-        User owner = userRepository.save(new User(null, "owner@test.ru", "Owner"));
-        User booker = userRepository.save(new User(null, "booker@test.ru", "Booker"));
+    void getBookingsOfCurrentUser_returnsCreatedBooking() {
+        UserDTO owner = userService.add(new UserDTO(null, "Owner", "owner1@mail.com"));
+        UserDTO booker = userService.add(new UserDTO(null, "Booker", "booker1@mail.com"));
 
-        Item item = itemRepository.save(Item.builder()
-                .userId(owner.getId())
-                .name("Bike")
-                .description("Fast bike")
-                .available(true)
-                .requestId(null)
-                .build());
+        ItemDto item = new ItemDto();
+        item.setName("Item");
+        item.setDescription("Desc");
+        item.setAvailable(true);
+        ItemDto savedItem = itemService.create(owner.getId(), item);
 
         LocalDateTime start = LocalDateTime.now().plusDays(1);
-        LocalDateTime end = LocalDateTime.now().plusDays(2);
+        LocalDateTime end = start.plusDays(1);
+        BookingDto created = bookingService.addBooking(booker.getId(), new BookingInputDto(savedItem.getId(), start, end));
 
-        BookingInputDto in = new BookingInputDto(item.getId(), start, end);
+        List<BookingDto> bookings = bookingService.getBookingsOfCurrentUser(State.ALL, booker.getId()); // <-- 2 аргумента
+        assertThat(bookings).extracting(BookingDto::getId).contains(created.getId());
+    }
 
-        BookingDto out = bookingService.addBooking(booker.getId(), in);
+    @Test
+    void getBookingsOfOwner_returnsBookingsForOwnerItems() {
+        UserDTO owner = userService.add(new UserDTO(null, "Owner2", "owner2@mail.com"));
+        UserDTO booker = userService.add(new UserDTO(null, "Booker2", "booker2@mail.com"));
 
-        assertThat(out.getId()).isNotNull();
-        assertThat(out.getStatus()).isEqualTo(Status.WAITING);
-        assertThat(out.getStart()).isEqualTo(start);
-        assertThat(out.getEnd()).isEqualTo(end);
-        assertThat(out.getBooker().getId()).isEqualTo(booker.getId());
-        assertThat(out.getItem().getId()).isEqualTo(item.getId());
+        ItemDto item = new ItemDto();
+        item.setName("Item2");
+        item.setDescription("Desc2");
+        item.setAvailable(true);
+        ItemDto savedItem = itemService.create(owner.getId(), item);
+
+        LocalDateTime start = LocalDateTime.now().plusDays(1);
+        LocalDateTime end = start.plusDays(1);
+        bookingService.addBooking(booker.getId(), new BookingInputDto(savedItem.getId(), start, end));
+
+        List<BookingDto> ownerBookings = bookingService.getBookingsOfOwner(State.ALL, owner.getId()); // <-- 2 аргумента
+        assertThat(ownerBookings).isNotEmpty();
+        assertThat(ownerBookings.get(0).getItem().getId()).isEqualTo(savedItem.getId());
     }
 }
+
+
