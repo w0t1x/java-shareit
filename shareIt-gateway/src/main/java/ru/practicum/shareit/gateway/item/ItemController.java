@@ -75,7 +75,8 @@ public class ItemController {
 
     private void validateItemCreate(ItemDto dto) {
         if (dto == null) throw new IllegalArgumentException("body is null");
-        if (dto.getName() == null || dto.getName().isBlank()) throw new IllegalArgumentException("name must not be blank");
+        if (dto.getName() == null || dto.getName().isBlank())
+            throw new IllegalArgumentException("name must not be blank");
         if (dto.getDescription() == null || dto.getDescription().isBlank())
             throw new IllegalArgumentException("description must not be blank");
         if (dto.getAvailable() == null) throw new IllegalArgumentException("available must not be null");
@@ -84,7 +85,8 @@ public class ItemController {
 
     private void validateItemPatch(ItemDto dto) {
         if (dto == null) return;
-        if (dto.getName() != null && dto.getName().isBlank()) throw new IllegalArgumentException("name must not be blank");
+        if (dto.getName() != null && dto.getName().isBlank())
+            throw new IllegalArgumentException("name must not be blank");
         if (dto.getDescription() != null && dto.getDescription().isBlank())
             throw new IllegalArgumentException("description must not be blank");
     }
