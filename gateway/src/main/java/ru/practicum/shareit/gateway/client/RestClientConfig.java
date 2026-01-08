@@ -29,7 +29,6 @@ public class RestClientConfig {
         HttpComponentsClientHttpRequestFactory rf =
                 new HttpComponentsClientHttpRequestFactory(httpClient);
 
-        // можно и билдером дополнительно (не обязательно)
         return new RestTemplateBuilder()
                 .requestFactory(() -> rf)
                 .setConnectTimeout(Duration.ofSeconds(5));
