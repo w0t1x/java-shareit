@@ -6,12 +6,13 @@
         <groupId>ru.practicum</groupId>
         <artifactId>shareit</artifactId>
         <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>shareit-gateway</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-
     <name>ShareIt Gateway</name>
+    <packaging>jar</packaging>
+    <version>0.0.1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
