@@ -2,7 +2,7 @@ services:
   gateway:
     build: shareIt-gateway
     image: shareit-gateway
-    container_name: shareIt-gateway
+    container_name: shareit-gateway
     ports:
       - "8080:8080"
     depends_on:
@@ -29,9 +29,9 @@ services:
     ports:
       - "6541:5432"
     environment:
-      - POSTGRES_PASSWORD=shareit
+      - POSTGRES_PASSWORD=12345
       - POSTGRES_USER=dbuser
-      - POSTGRES_DB=12345
+      - POSTGRES_DB=shareit
     healthcheck:
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
       timeout: 5s
