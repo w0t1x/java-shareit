@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.practicum.shareit.booking.dto.BookingInputDto;
 import ru.practicum.shareit.gateway.exception.GatewayErrorHandler;
 
 import java.time.LocalDateTime;
