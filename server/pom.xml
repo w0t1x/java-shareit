@@ -71,7 +71,6 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>ru.practicum.shareit.ShareItServerApp</mainClass>
-                    <classifier>exec</classifier>
                 </configuration>
                 <executions>
                     <execution>
